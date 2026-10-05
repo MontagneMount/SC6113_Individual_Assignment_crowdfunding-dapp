@@ -1,3 +1,4 @@
+import dns from "node:dns";
 import { MongoClient } from "mongodb";
 import { config } from "./config.js";
 
@@ -14,11 +15,32 @@ export async function connectMongo() {
     console.warn("MONGODB_URI is not set: database features are off until it is added to .env");
     return;
   }
+  await ensureSrvLookupWorks(config.mongoUri);
   const candidate = new MongoClient(config.mongoUri, { serverSelectionTimeoutMS: 10_000 });
   await candidate.connect();
   await candidate.db("admin").command({ ping: 1 });
   client = candidate;
   console.log("Connected to MongoDB");
+}
+
+/**
+ * mongodb+srv:// addresses need a DNS SRV lookup. VPN and proxy tools often point the
+ * system DNS at 127.0.0.1, which Node's resolver cannot use for that lookup, so fall
+ * back to public DNS servers (override with DNS_SERVERS=1.1.1.1,8.8.8.8 in .env).
+ */
+async function ensureSrvLookupWorks(uri) {
+  if (!uri.startsWith("mongodb+srv://")) return;
+  const srvName = `_mongodb._tcp.${new URL(uri).hostname}`;
+  try {
+    await dns.promises.resolveSrv(srvName);
+  } catch (err) {
+    const fallback = (process.env.DNS_SERVERS || "8.8.8.8,1.1.1.1")
+      .split(",")
+      .map((server) => server.trim())
+      .filter(Boolean);
+    console.warn(`System DNS could not resolve the MongoDB address (${err.code}); using ${fallback.join(", ")} instead`);
+    dns.setServers(fallback);
+  }
 }
 
 /**
