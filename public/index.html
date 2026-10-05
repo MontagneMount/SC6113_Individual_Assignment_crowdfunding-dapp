@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="description" content="CampusFund: transparent, all-or-nothing crowdfunding for campus projects on Ethereum Sepolia." />
+    <title>CampusFund · Explore campaigns</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <script type="module" src="/js/pages/explore.js"></script>
+  </head>
+  <body>
+    <header id="site-header" class="site-header"></header>
+
+    <main class="container">
+      <section class="hero">
+        <h1>Back campus ideas, transparently</h1>
+        <p>
+          Every contribution is held by a smart contract on Ethereum Sepolia. If a campaign reaches its goal by the
+          deadline, the creator receives the funds. If not, every backer can take their money back.
+        </p>
+        <a class="btn btn-primary" href="/create.html">Start a campaign</a>
+      </section>
+
+      <section id="stats" class="stats" aria-label="Platform statistics"></section>
+
+      <section aria-labelledby="campaigns-title">
+        <h2 id="campaigns-title">Campaigns</h2>
+        <form id="filters" class="filters" role="search">
+          <input class="input search" type="search" name="q" placeholder="Search campaigns" aria-label="Search campaigns" />
+          <select class="input" name="category" aria-label="Category">
+            <option value="">All categories</option>
+          </select>
+          <select class="input" name="status" aria-label="Status">
+            <option value="">Any status</option>
+            <option value="active">Active</option>
+            <option value="successful">Funded</option>
+            <option value="withdrawn">Paid out</option>
+            <option value="failed">Not funded</option>
+          </select>
+          <select class="input" name="sort" aria-label="Sort by">
+            <option value="newest">Newest</option>
+            <option value="ending">Ending soon</option>
+            <option value="raised">Most raised</option>
+            <option value="progress">Closest to goal</option>
+          </select>
+        </form>
+        <div id="campaign-list"></div>
+      </section>
+    </main>
+
+    <nav id="bottom-nav" class="bottom-nav" aria-label="Main"></nav>
+  </body>
+</html>
