@@ -1,0 +1,14 @@
+node_modules/
+artifacts/
+cache/
+types/
+coverage/
+*.log
+
+# Secrets: never commit private keys or RPC/API keys
+.env
+.env.*
+!.env.example
+
+# Local-chain deployments are throwaway; keep Sepolia ones
+ignition/deployments/chain-31337/
