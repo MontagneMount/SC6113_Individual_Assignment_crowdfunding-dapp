@@ -15,7 +15,7 @@ Creators raise Sepolia ETH before a deadline. If the goal is met, the creator wi
 | Page | What you can do |
 |---|---|
 | Explore (`/`) | Browse, search and filter campaigns; platform statistics |
-| Campaign (`/campaign.html?id=…`) | Back a campaign, withdraw (creator) or claim a refund (backer); fund transparency panel, backers and on-chain activity with Etherscan links; numbers are re-read from the contract and marked "Verified on-chain" |
+| Campaign (`/campaign.html?id=…`) | Back a campaign, withdraw (creator) or claim a refund (backer); fund transparency panel, backers and on-chain activity with Etherscan links; raised/refunded totals and withdrawal status are compared with the cache for the "Verified on-chain" badge |
 | Start a campaign (`/create.html`) | Create a campaign on-chain, then sign its description and cover image |
 | My activity (`/me.html`) | Personal statistics, campaigns backed and created, refunds or withdrawals waiting for you |
 | Deploy (`/deploy.html`, local only) | Deploy the contract to Sepolia with MetaMask |
@@ -55,14 +55,14 @@ Browser (HTML/CSS/JS + ethers.js)
 3. After the deadline, if the goal is met, only the creator can withdraw, and only once.
 4. After the deadline, if the goal is missed, each backer refunds their own contribution.
 5. Repeated contributions add up; a refund can be claimed only once.
-6. The creator cannot back their own campaign (prevents self-funding to fake success).
+6. The creator address cannot back its own campaign; another address owned by the same person is not blocked.
 
 ## Security highlights
 
 - Contract: re-entrancy guard plus Checks-Effects-Interactions, pull-based refunds, custom errors, `SafeCast`, no `receive()` (plain ETH transfers are rejected).
-- Campaign details can only be saved with a MetaMask signature from the on-chain creator. The signed message covers the campaign id, contract, chain, category, and SHA-256 hashes of the description and image, and it expires after 10 minutes.
+- Campaign details can only be saved with a MetaMask signature from the on-chain creator. The signed message covers the campaign id, contract, chain, category, and SHA-256 hashes of the description and image, and it expires after 10 minutes. Each save must be newer than the stored version, and a compare-and-set update rejects stale or concurrent writes with HTTP 409.
 - Uploads: PNG, JPEG or WebP only, checked by file signature (not just the declared type), 2 MB maximum.
-- User text is inserted with text nodes (never `innerHTML`), so no XSS. A Content-Security-Policy, `nosniff` and frame protection are sent on every response.
+- User text is inserted with text nodes (never `innerHTML`), avoiding HTML interpretation of that text. A Content-Security-Policy, `nosniff` and frame protection are sent on every response.
 - Simple per-IP rate limits on write endpoints. Secrets live in `.env` / Render environment variables, never in the repo.
 
 ## Getting started
@@ -74,11 +74,11 @@ npm install
 cp .env.example .env        # then put your MongoDB connection string in .env
 npm run compile             # compiles the contract and exports abi/Crowdfunding.json
 npm test                    # 27 smart-contract tests
-npm run test:server         # 13 backend tests (signatures and validation)
+npm run test:server         # 21 backend unit tests (validation and version conflicts)
 npm run dev                 # http://localhost:3000 (restarts on server changes)
 ```
 
-First run only: open `http://localhost:3000/deploy.html`, deploy with MetaMask, and the address is saved to `deployments/sepolia.json` (commit this file). Each deployment gets its own MongoDB database named `crowdfunding_<first 8 hex digits of the address>`.
+For a new contract deployment only: open `http://localhost:3000/deploy.html`, deploy with MetaMask, and the address is saved to `deployments/sepolia.json` (commit this file). Each deployment gets its own MongoDB database named `crowdfunding_<first 8 hex digits of the address>`.
 
 Gas usage report: `npx hardhat test --gas-stats`.
 
@@ -121,4 +121,9 @@ server/test/                         backend tests (node:test)
 public/                              pages, styles and browser JavaScript
 public/js/shared/constants.js        rules shared by browser and server (limits, signed message)
 scripts/export-abi.js                copies the ABI out of Hardhat's build output
+docs/DATABASE.md                     database collections, setup and recovery
 ```
+
+## Database
+
+[docs/DATABASE.md](docs/DATABASE.md) lists the collections and field types, explains how to rebuild the chain cache in a fresh database, and why descriptions and images need their own backup.
