@@ -10,6 +10,7 @@ import { InputError, parseCampaignId, recoverDetailsSigner, sha256Hex, validateD
 import { getSyncedBlock, syncNow } from "../indexer.js";
 import { rateLimit } from "../rate-limit.js";
 import { state } from "../state.js";
+import { saveDetailsVersion } from "../details-store.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -154,25 +155,30 @@ export function createApiRouter() {
         data: new Binary(req.file.buffer),
         createdAt: new Date(),
       });
-      if (imageId) await collections.images().deleteOne({ _id: imageId });
       imageId = insertedId;
     }
 
-    await collections.details().updateOne(
-      { _id: campaignId },
-      {
-        $set: {
-          category: input.category,
-          description: input.description,
-          imageId,
-          signer: signer.toLowerCase(),
-          signature: input.signature,
-          issuedAt: input.issuedAt,
-          updatedAt: new Date(),
-        },
-      },
-      { upsert: true },
-    );
+    try {
+      await saveDetailsVersion(collections.details(), campaignId, existing, {
+        category: input.category,
+        description: input.description,
+        imageId,
+        signer: signer.toLowerCase(),
+        signature: input.signature,
+        issuedAt: input.issuedAt,
+        updatedAt: new Date(),
+      });
+    } catch (err) {
+      // Only a definite conflict proves the new image was not committed.
+      // On an ambiguous database/network failure, preserve it for reconciliation.
+      if (err instanceof InputError && err.status === 409 && req.file) {
+        await collections.images().deleteOne({ _id: imageId }).catch(() => {});
+      }
+      throw err;
+    }
+    if (req.file && existing?.imageId) {
+      await collections.images().deleteOne({ _id: existing.imageId }).catch(() => {});
+    }
     res.status(existing ? 200 : 201).json({ ok: true });
   });
 
