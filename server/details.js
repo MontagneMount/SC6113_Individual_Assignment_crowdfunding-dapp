@@ -40,7 +40,11 @@ export function validateDetailsInput(body, file) {
     throw new InputError(`Description must be at most ${LIMITS.descriptionMaxChars} characters.`);
   }
   if (typeof issuedAt !== "string" || !ISO_TIME.test(issuedAt)) throw new InputError("Invalid signing time.");
-  if (Math.abs(Date.now() - Date.parse(issuedAt)) > LIMITS.signatureMaxAgeMs) {
+  const issuedTime = Date.parse(issuedAt);
+  if (!Number.isFinite(issuedTime) || new Date(issuedTime).toISOString() !== issuedAt) {
+    throw new InputError("Invalid signing time.");
+  }
+  if (Math.abs(Date.now() - issuedTime) > LIMITS.signatureMaxAgeMs) {
     throw new InputError("This signature has expired. Please try again.");
   }
   if (typeof signature !== "string" || !SIGNATURE.test(signature)) throw new InputError("Missing or invalid signature.");

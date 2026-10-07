@@ -80,6 +80,8 @@ describe("input validation", () => {
     ["a description over 2000 characters", { description: "x".repeat(2001) }, /at most/],
     ["an expired signing time", { issuedAt: new Date(Date.now() - 11 * 60 * 1000).toISOString() }, /expired/],
     ["a malformed signing time", { issuedAt: "yesterday" }, /signing time/],
+    ["an impossible ISO date", { issuedAt: "2026-99-99T99:99:99.999Z" }, /signing time/],
+    ["a date normalised into another day", { issuedAt: "2026-02-30T00:00:00.000Z" }, /signing time/],
     ["a malformed signature", { signature: "0x1234" }, /signature/],
   ]) {
     it(`rejects ${name}`, () => {
