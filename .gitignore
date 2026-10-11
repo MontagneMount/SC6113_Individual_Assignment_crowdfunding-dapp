@@ -17,3 +17,6 @@ ignition/deployments/chain-31337/
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Database snapshots made by scripts/export_database.py (not for the public repo)
+database-export/
