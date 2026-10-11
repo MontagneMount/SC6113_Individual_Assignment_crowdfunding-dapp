@@ -18,6 +18,7 @@ from .db import ServiceUnavailableError
 from .details import InputError
 from .state import activate_deployment
 from .times import iso_millis
+from .visits import visit_log
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +72,7 @@ def create_app(start_services=True):
         from .dev import dev
 
         app.register_blueprint(dev)
+    app.register_blueprint(visit_log)
     app.register_blueprint(api)
     register_pages(app)
 

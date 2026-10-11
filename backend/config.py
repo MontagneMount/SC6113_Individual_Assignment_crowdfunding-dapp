@@ -26,6 +26,8 @@ RPC_URL = os.environ.get("SEPOLIA_RPC_URL") or SEPOLIA["rpcUrl"]
 # so older logs are read from an endpoint that keeps the full history.
 HISTORY_RPC_URL = os.environ.get("SEPOLIA_HISTORY_RPC_URL") or "https://sepolia.gateway.tenderly.co"
 CHAIN = SEPOLIA
+# Wallets that may open the visitor log. Empty means the wallet that deployed the contract.
+ADMIN_ADDRESSES = [address.strip() for address in os.environ.get("ADMIN_ADDRESSES", "").split(",") if address.strip()]
 
 ABI = json.loads(ABI_PATH.read_text(encoding="utf-8"))["abi"]
 

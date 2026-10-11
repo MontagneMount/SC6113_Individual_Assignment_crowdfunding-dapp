@@ -6,6 +6,7 @@ import dns.resolver
 from pymongo import ASCENDING, MongoClient
 
 from . import config
+from .constants import LIMITS
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +92,13 @@ def meta():
     return _collection("meta")  # indexer progress
 
 
+def visits():
+    return _collection("visits")  # page visits for the admin's visitor log
+
+
 def ensure_indexes():
     events().create_index([("campaignId", ASCENDING), ("blockNumber", ASCENDING), ("logIndex", ASCENDING)])
     events().create_index([("account", ASCENDING)])
     campaigns().create_index([("creator", ASCENDING)])
+    # A TTL index: MongoDB deletes each visit by itself once it is older than the retention period.
+    visits().create_index([("at", ASCENDING)], expireAfterSeconds=LIMITS["visitRetentionDays"] * 24 * 3600)

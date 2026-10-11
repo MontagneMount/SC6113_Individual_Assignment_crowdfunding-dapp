@@ -337,6 +337,16 @@ code {
   color: var(--warning);
 }
 
+.btn-danger {
+  border-color: #fca5a5;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+  border-color: var(--danger);
+}
+
 .btn-block {
   width: 100%;
 }

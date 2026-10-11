@@ -8,7 +8,7 @@ import subprocess
 import pytest
 
 from backend import config
-from backend.constants import CATEGORIES, LIMITS, SEPOLIA, build_details_message, normalize_description
+from backend.constants import CATEGORIES, LIMITS, SEPOLIA, build_admin_message, build_details_message, normalize_description
 
 NODE = shutil.which("node")
 pytestmark = pytest.mark.skipif(NODE is None, reason="Node.js is not installed")
@@ -81,3 +81,15 @@ def test_signed_message_matches_the_browser():
         build_details_message(**python_args, image_sha256=None),
         build_details_message(**python_args, image_sha256="cd" * 32),
     ]
+
+
+def test_admin_sign_in_message_matches_the_browser():
+    fields = {
+        "wallet": "0xD496b7208893ae3867F72Ae4ACe97e146b9C1376",
+        "contractAddress": "0xc898d65cbB8f51D4811acd5911685eBD9731C968",
+        "chainId": 11155111,
+        "issuedAt": "2026-10-11T08:00:00.000Z",
+    }
+    assert run_browser_code("return shared.buildAdminMessage(input);", fields) == build_admin_message(
+        fields["wallet"], fields["contractAddress"], fields["chainId"], fields["issuedAt"]
+    )

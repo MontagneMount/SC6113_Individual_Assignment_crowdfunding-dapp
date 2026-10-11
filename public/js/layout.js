@@ -2,6 +2,7 @@
 import { explainError } from "./contract.js";
 import { shortAddress } from "./format.js";
 import { $, el, toast } from "./ui.js";
+import { recordVisit } from "./visits.js";
 import {
   connectWallet,
   getAccount,
@@ -29,12 +30,13 @@ export function onAccountChange(callback) {
   listeners.add(callback);
 }
 
-export async function initLayout(activeKey) {
+export async function initLayout(activeKey, { logVisit = true } = {}) {
   renderHeader(activeKey);
   renderBottomNav(activeKey);
   renderMobileWalletBanner();
 
   currentAccount = await getAccount().catch(() => null);
+  if (logVisit) recordVisit(currentAccount);
   await renderWalletButton();
 
   watchWallet(async (account) => {

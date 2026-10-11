@@ -30,6 +30,7 @@ LIMITS = {
     "signatureMaxAgeMs": 10 * 60 * 1000,
     "minDurationSeconds": 60,  # must match MIN_DURATION in Crowdfunding.sol
     "maxDurationSeconds": 90 * 24 * 60 * 60,  # must match MAX_DURATION in Crowdfunding.sol
+    "visitRetentionDays": 30,  # visitor-log records are deleted automatically after this
 }
 
 # The characters JavaScript's trim() removes. Python's strip() uses a different set, and a
@@ -61,5 +62,19 @@ def build_details_message(campaign_id, contract_address, chain_id, category, des
         f"Category: {category}",
         f"Description SHA-256: {description_sha256}",
         f"New cover image SHA-256: {'none' if image_sha256 is None else image_sha256}",
+        f"Issued at: {issued_at}",
+    ])
+
+
+def build_admin_message(wallet, contract_address, chain_id, issued_at):
+    """The exact text the admin signs in MetaMask to open the visitor log."""
+    return "\n".join([
+        "CampusFund: admin sign-in",
+        "",
+        f"Lets this wallet view and delete visit records for {LIMITS['signatureMaxAgeMs'] // 60_000} minutes.",
+        "",
+        f"Wallet: {wallet}",
+        f"Contract: {contract_address}",
+        f"Chain ID: {chain_id}",
         f"Issued at: {issued_at}",
     ])

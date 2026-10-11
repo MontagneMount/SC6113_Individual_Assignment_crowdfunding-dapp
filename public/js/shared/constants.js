@@ -30,6 +30,7 @@ export const LIMITS = {
   signatureMaxAgeMs: 10 * 60 * 1000,
   minDurationSeconds: 60, // must match MIN_DURATION in Crowdfunding.sol
   maxDurationSeconds: 90 * 24 * 60 * 60, // must match MAX_DURATION in Crowdfunding.sol
+  visitRetentionDays: 30, // visitor-log records are deleted automatically after this
 };
 
 // Browsers send form text with "\r\n" line breaks, so normalise before hashing.
@@ -58,6 +59,20 @@ export function buildDetailsMessage({
     `Category: ${category}`,
     `Description SHA-256: ${descriptionSha256}`,
     `New cover image SHA-256: ${imageSha256 ?? "none"}`,
+    `Issued at: ${issuedAt}`,
+  ].join("\n");
+}
+
+/** The exact text the admin signs in MetaMask to open the visitor log. */
+export function buildAdminMessage({ wallet, contractAddress, chainId, issuedAt }) {
+  return [
+    "CampusFund: admin sign-in",
+    "",
+    `Lets this wallet view and delete visit records for ${LIMITS.signatureMaxAgeMs / 60_000} minutes.`,
+    "",
+    `Wallet: ${wallet}`,
+    `Contract: ${contractAddress}`,
+    `Chain ID: ${chainId}`,
     `Issued at: ${issuedAt}`,
   ].join("\n");
 }
