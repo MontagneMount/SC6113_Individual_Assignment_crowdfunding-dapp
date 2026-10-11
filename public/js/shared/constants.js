@@ -1,5 +1,6 @@
-// Shared by the browser and the Node.js server, so both sides validate input
-// and build the signed message in exactly the same way. No imports on purpose.
+// Rules the browser shares with the Flask backend: backend/constants.py mirrors this file,
+// and tests/test_shared_with_browser.py checks that both validate input and build the signed
+// message in exactly the same way. No imports on purpose.
 
 export const SEPOLIA = {
   chainId: 11155111,

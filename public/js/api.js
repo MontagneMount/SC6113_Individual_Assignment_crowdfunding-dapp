@@ -1,4 +1,4 @@
-// Calls to our own Express backend.
+// Calls to our own Flask backend.
 
 async function request(path, options = {}) {
   const response = await fetch(path, options);

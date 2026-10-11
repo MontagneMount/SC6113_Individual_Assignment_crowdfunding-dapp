@@ -1,7 +1,7 @@
 {
   "name": "crowdfunding-dapp",
   "version": "0.1.0",
-  "description": "Campus crowdfunding DApp for SC6113: Solidity smart contract, MetaMask, Node.js + Express backend, MongoDB",
+  "description": "Smart-contract tooling for CampusFund (SC6113): compiles and tests the Solidity contract with Hardhat. The web backend is Python Flask (see requirements.txt).",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,9 +10,7 @@
   "scripts": {
     "compile": "hardhat compile && node scripts/export-abi.js",
     "test": "hardhat test",
-    "test:server": "node --test server/test/*.test.js",
-    "start": "node --env-file-if-exists=.env server/index.js",
-    "dev": "node --watch --env-file-if-exists=.env server/index.js"
+    "vendor:ethers": "node scripts/vendor-ethers.js"
   },
   "license": "MIT",
   "devDependencies": {
@@ -21,9 +19,6 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.6.1",
-    "ethers": "^6.17.0",
-    "express": "^5.2.1",
-    "mongodb": "^7.7.0",
-    "multer": "^2.4.0"
+    "ethers": "^6.17.0"
   }
 }
