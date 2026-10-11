@@ -29,6 +29,7 @@ Creators raise Sepolia ETH before a deadline. If the goal is met, the creator wi
 | Campaign (`/campaign.html?id=…`) | Back a campaign, withdraw (creator) or claim a refund (backer); fund transparency panel, backers and on-chain activity with Etherscan links; raised/refunded totals and withdrawal status are compared with the cache for the "Verified on-chain" badge |
 | Start a campaign (`/create.html`) | Create a campaign on-chain, then sign its description and cover image |
 | My activity (`/me.html`) | Personal statistics, campaigns backed and created, refunds or withdrawals waiting for you |
+| Visitor log (`/admin`, admin wallet only) | Every page visit with its time, page, connected wallet and browser; visit statistics; filter by page or wallet; delete one record, the filtered records or all of them |
 | Deploy (`/deploy.html`, local only) | Deploy the contract to Sepolia with MetaMask |
 
 Works on phones: the layout is mobile first, and phone browsers without MetaMask get an "Open in MetaMask app" link.
@@ -44,7 +45,7 @@ Browser (HTML/CSS/JS + ethers.js)
      details, images)                 (indexer copies contract events)
 ```
 
-- **The blockchain is the source of truth.** Balances, contributions and refund rights live only in the contract. MongoDB holds a rebuildable copy of the events (for fast search and history) plus off-chain details: descriptions, categories and cover images.
+- **The blockchain is the source of truth.** Balances, contributions and refund rights live only in the contract. MongoDB holds a rebuildable copy of the events (for fast search and history), off-chain details (descriptions, categories and cover images) and the visitor log.
 - **Private keys never leave MetaMask.** The server never signs anything. Even the contract is deployed from MetaMask.
 
 ## Tech stack
@@ -74,6 +75,7 @@ Browser (HTML/CSS/JS + ethers.js)
 - Contract: re-entrancy guard plus Checks-Effects-Interactions, pull-based refunds, custom errors, `SafeCast`, no `receive()` (plain ETH transfers are rejected).
 - Campaign details can only be saved with a MetaMask signature from the on-chain creator. The signed message covers the campaign id, contract, chain, category, and SHA-256 hashes of the description and image, and it expires after 10 minutes. Each save must be newer than the stored version, and a compare-and-set update rejects stale or concurrent writes with HTTP 409.
 - Uploads: PNG, JPEG or WebP only, checked by file signature (not just the declared type), 2 MB maximum.
+- Visitor log: only the admin wallet (the contract deployer, or `ADMIN_ADDRESSES`) can read or delete it. The admin signs a sign-in message in MetaMask, and every request carries that signature, which expires after 10 minutes; there is no password or session cookie. No IP address is stored (a random id kept in the visitor's browser tells repeat visits apart), only a short browser label is kept instead of the full User-Agent, and a MongoDB TTL index deletes records after 30 days.
 - User text is inserted with text nodes (never `innerHTML`), avoiding HTML interpretation of that text. A Content-Security-Policy, `nosniff` and frame protection are sent on every response.
 - Simple per-IP rate limits on write endpoints. Secrets live in `.env` / Render environment variables, never in the repo.
 
@@ -89,7 +91,7 @@ python -m venv .venv
 pip install -r requirements-dev.txt
 copy .env.example .env      # then put your MongoDB connection string in .env
 python app.py               # http://localhost:3000
-pytest                      # 35 backend tests
+pytest                      # 58 backend tests
 ```
 
 Smart contract (Hardhat):
@@ -112,7 +114,7 @@ Create a Render **Web Service** (Python) from this repository:
 |---|---|
 | Build command | `pip install -r requirements.txt` |
 | Start command | `gunicorn app:app` (settings in `gunicorn.conf.py`) |
-| Environment variables | `MONGODB_URI`, `MONGODB_DB=crowdfunding` (optional: `SEPOLIA_RPC_URL`, `SEPOLIA_HISTORY_RPC_URL`) |
+| Environment variables | `MONGODB_URI`, `MONGODB_DB=crowdfunding` (optional: `SEPOLIA_RPC_URL`, `SEPOLIA_HISTORY_RPC_URL`, `ADMIN_ADDRESSES`) |
 
 `.python-version` selects Python 3.12. Render sets `RENDER=true`, which switches the app to production mode and turns off the developer-only deploy routes (`APP_ENV=production` does the same elsewhere). In MongoDB Atlas, allow network access from `0.0.0.0/0`, because Render's free tier has no fixed IP address.
 
@@ -128,6 +130,10 @@ Create a Render **Web Service** (Python) from this repository:
 | `GET /api/users/:address` | A wallet's campaigns, contributions and pending actions |
 | `GET /api/stats` | Platform totals |
 | `POST /api/sync` | Index new contract events now (called after each transaction) |
+| `POST /api/visits` | Record a page visit (sent by every page; rate limited) |
+| `GET /api/admin/visits?page=&wallet=` | Visitor log and visit statistics (admin signature required) |
+| `DELETE /api/admin/visits/:id` | Delete one visit record (admin) |
+| `DELETE /api/admin/visits?page=&wallet=` | Delete the matching records, or all records without filters (admin) |
 | `GET /api/health` | Health check |
 
 ## Project structure
@@ -139,7 +145,7 @@ test/Crowdfunding.test.js            contract tests (Hardhat + Mocha)
 abi/Crowdfunding.json                ABI used by the server and browser (npm run compile)
 deployments/sepolia.json             deployed address and block (created by /deploy.html)
 app.py                               Flask entry point (python app.py, or gunicorn app:app)
-backend/                             Flask API, MongoDB access, event indexer, validation
+backend/                             Flask API, MongoDB access, event indexer, validation, visitor log
 tests/                               backend tests (pytest)
 public/                              pages, styles and browser JavaScript
 public/js/shared/constants.js        rules shared by browser and server (limits, signed message)

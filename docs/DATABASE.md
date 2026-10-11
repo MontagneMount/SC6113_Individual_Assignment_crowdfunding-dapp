@@ -18,14 +18,18 @@ Use a separate MongoDB database for assessment or recovery; the deployed site an
 | meta | `_id`: `sync` | lastBlock and updatedAt |
 | campaignDetails | `_id`: campaign id | category, description, imageId, signer, signature, issuedAt canonical ISO string, updatedAt |
 | images | `_id`: ObjectId | campaignId, contentType, size, sha256, BSON Binary data, createdAt |
+| visits | `_id`: ObjectId | at (BSON date), page path, campaignId or null, wallet (lower case) or null, visitor (random id from the browser), browser label such as "Edge on Windows" |
 
 The default unique `_id` index protects initial metadata creation. Updates condition on the previously read `issuedAt`; conflicts return 409 and require refreshing/signing again. Event lookup indexes cover campaign/block/log and account; campaigns are indexed by creator. Currency strings avoid JavaScript Number precision loss.
+
+`visits` is the visitor log. Every page sends one record when it opens; only the admin wallet can read or delete records through `/api/admin/visits`. Its `at` index is a TTL index (`expireAfterSeconds` = 30 days), so MongoDB deletes old records by itself. No IP address or full User-Agent string is stored. The connected wallet is reported by the browser and not verified, so the log describes visits; it is not proof of identity.
 
 ## Recovery and submission scope
 
 - A fresh database can rebuild campaigns, events and sync progress from the deployment block. Start with a new prefix instead of deleting live records. Cached data is not authoritative for transfers.
 - The default public RPC keeps only about two days of event logs and answers older ranges with "pruned history unavailable". The indexer then reads those ranges from `SEPOLIA_HISTORY_RPC_URL` (default: Tenderly's public Sepolia gateway, which keeps the full history), so a rebuild or a server that slept for days still sees every event. A full rebuild of the demonstrated deployment took about 20 seconds and matched the existing records.
 - Descriptions, categories, signatures and image bytes cannot be recovered from Ethereum. Back up `campaignDetails` and `images` together using MongoDB tooling; BSON-preserving exports retain ObjectId/Binary types. Store and transmit credentials separately from any export.
+- `visits` cannot be rebuilt either, but it is short-lived by design (30-day TTL) and needs no backup.
 - For submission, include this schema/setup document, source and deployment configuration. If a database snapshot is required, add an approved export of the demonstration metadata and images. No live snapshot is included by this change; chain-replay instructions alone do not restore that metadata.
 - Uploads and metadata span separate collections. After an ambiguous network failure, an unreferenced image may remain. Preserve such data until reconciliation; never remove images referenced by current metadata.
 - The indexer currently has no reorganisation rollback. Rebuilding is a recovery option, not a substitute for finality-aware indexing.
