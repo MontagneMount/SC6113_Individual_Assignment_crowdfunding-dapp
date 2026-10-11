@@ -7,6 +7,8 @@ Creators raise Sepolia ETH before a deadline. If the goal is met, the creator wi
 
 - **Website:** https://sc6113-individual-assignment-0kth.onrender.com/
   (free Render instance: after 15 idle minutes the first visit can take about a minute to wake up)
+- **Admin page (visitor log):** https://sc6113-individual-assignment-0kth.onrender.com/admin
+  (not linked in the menu, so open this URL directly; only the wallet that deployed the contract can sign in)
 - **Smart contract on Sepolia:** [`0xc898d65cbB8f51D4811acd5911685eBD9731C968`](https://sepolia.etherscan.io/address/0xc898d65cbB8f51D4811acd5911685eBD9731C968)
 - **To try it:** install MetaMask, switch to the Sepolia test network and get free Sepolia ETH from a faucet. On a phone, open the site inside the MetaMask app.
 
