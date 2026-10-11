@@ -12,3 +12,8 @@ coverage/
 
 # Local-chain deployments are throwaway; keep Sepolia ones
 ignition/deployments/chain-31337/
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
