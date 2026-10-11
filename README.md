@@ -10,6 +10,17 @@ Creators raise Sepolia ETH before a deadline. If the goal is met, the creator wi
 - **Smart contract on Sepolia:** [`0xc898d65cbB8f51D4811acd5911685eBD9731C968`](https://sepolia.etherscan.io/address/0xc898d65cbB8f51D4811acd5911685eBD9731C968)
 - **To try it:** install MetaMask, switch to the Sepolia test network and get free Sepolia ETH from a faucet. On a phone, open the site inside the MetaMask app.
 
+## Submission files
+
+| Item | Where |
+|---|---|
+| Smart contract (`.sol`) | [`contracts/Crowdfunding.sol`](contracts/Crowdfunding.sol) |
+| ABI | [`abi/Crowdfunding.json`](abi/Crowdfunding.json) |
+| Python Flask backend | [`app.py`](app.py) and [`backend/`](backend/) |
+| HTML, CSS, JavaScript | [`public/`](public/) |
+| Render link | https://sc6113-individual-assignment-0kth.onrender.com/ |
+| Database | MongoDB Atlas, described in [`docs/DATABASE.md`](docs/DATABASE.md) |
+
 ## Features
 
 | Page | What you can do |
@@ -29,7 +40,7 @@ Browser (HTML/CSS/JS + ethers.js)
  |-- MetaMask signs transactions --> Crowdfunding contract (Sepolia)
  |                                            | events
  |                                            v
- `-- REST API (search, history,  --> Express server --> MongoDB Atlas
+ `-- REST API (search, history,  --> Flask server --> MongoDB Atlas
      details, images)                 (indexer copies contract events)
 ```
 
@@ -41,9 +52,10 @@ Browser (HTML/CSS/JS + ethers.js)
 | Layer | Technology |
 |---|---|
 | Smart contract | Solidity 0.8.28, OpenZeppelin Contracts 5 (`ReentrancyGuard`, `SafeCast`) |
-| Contract tooling and tests | Hardhat 3, Mocha, Chai, ethers.js v6 |
+| Contract tooling and tests | Hardhat 3 (Node.js), Mocha, Chai, ethers.js v6 |
 | Frontend | HTML, CSS, JavaScript (ES modules), ethers.js v6, MetaMask |
-| Backend | Node.js, Express 5, Multer (uploads), MongoDB Node.js driver |
+| Backend | Python 3.12, Flask 3, web3.py (contract reads and signature checks), PyMongo, gunicorn |
+| Backend tests | pytest |
 | Database | MongoDB Atlas (free tier) |
 | Network | Ethereum Sepolia testnet |
 | Hosting | Render (web service) |
@@ -67,32 +79,42 @@ Browser (HTML/CSS/JS + ethers.js)
 
 ## Getting started
 
-Requirements: Node.js 22.9 or newer, MetaMask with some Sepolia ETH, and a MongoDB Atlas cluster.
+Requirements: Python 3.12, Node.js 22.9 or newer (only for compiling and testing the contract), MetaMask with some Sepolia ETH, and a MongoDB Atlas cluster.
+
+Web app (Flask). On macOS or Linux, activate the environment with `source .venv/bin/activate` instead:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements-dev.txt
+copy .env.example .env      # then put your MongoDB connection string in .env
+python app.py               # http://localhost:3000
+pytest                      # 35 backend tests
+```
+
+Smart contract (Hardhat):
 
 ```bash
 npm install
-cp .env.example .env        # then put your MongoDB connection string in .env
 npm run compile             # compiles the contract and exports abi/Crowdfunding.json
 npm test                    # 27 smart-contract tests
-npm run test:server         # 21 backend unit tests (validation and version conflicts)
-npm run dev                 # http://localhost:3000 (restarts on server changes)
 ```
 
 For a new contract deployment only: open `http://localhost:3000/deploy.html`, deploy with MetaMask, and the address is saved to `deployments/sepolia.json` (commit this file). Each deployment gets its own MongoDB database named `crowdfunding_<first 8 hex digits of the address>`.
 
-Gas usage report: `npx hardhat test --gas-stats`.
+Gas usage report: `npx hardhat test --gas-stats`. After upgrading ethers, refresh the browser copy with `npm run vendor:ethers`.
 
 ## Deploying to Render
 
-Create a Render **Web Service** from this repository:
+Create a Render **Web Service** (Python) from this repository:
 
 | Setting | Value |
 |---|---|
-| Build command | `npm install` |
-| Start command | `npm start` |
-| Environment variables | `NODE_ENV=production`, `MONGODB_URI`, `MONGODB_DB=crowdfunding` (optional: `SEPOLIA_RPC_URL`) |
+| Build command | `pip install -r requirements.txt` |
+| Start command | `gunicorn app:app` (settings in `gunicorn.conf.py`) |
+| Environment variables | `MONGODB_URI`, `MONGODB_DB=crowdfunding` (optional: `SEPOLIA_RPC_URL`, `SEPOLIA_HISTORY_RPC_URL`) |
 
-In MongoDB Atlas, allow network access from `0.0.0.0/0`, because Render's free tier has no fixed IP address. The developer-only deploy routes are disabled when `NODE_ENV=production`.
+`.python-version` selects Python 3.12. Render sets `RENDER=true`, which switches the app to production mode and turns off the developer-only deploy routes (`APP_ENV=production` does the same elsewhere). In MongoDB Atlas, allow network access from `0.0.0.0/0`, because Render's free tier has no fixed IP address.
 
 ## API
 
@@ -116,10 +138,12 @@ contracts/test/ReentrantBacker.sol   attacker contract, used only in tests
 test/Crowdfunding.test.js            contract tests (Hardhat + Mocha)
 abi/Crowdfunding.json                ABI used by the server and browser (npm run compile)
 deployments/sepolia.json             deployed address and block (created by /deploy.html)
-server/                              Express app, MongoDB access, event indexer, validation
-server/test/                         backend tests (node:test)
+app.py                               Flask entry point (python app.py, or gunicorn app:app)
+backend/                             Flask API, MongoDB access, event indexer, validation
+tests/                               backend tests (pytest)
 public/                              pages, styles and browser JavaScript
 public/js/shared/constants.js        rules shared by browser and server (limits, signed message)
+public/vendor/ethers/                ethers.js browser build (npm run vendor:ethers)
 scripts/export-abi.js                copies the ABI out of Hardhat's build output
 docs/DATABASE.md                     database collections, setup and recovery
 ```
